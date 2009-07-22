@@ -49,8 +49,16 @@ module AutoCompleteJquery
     def multiple_auto_complete_for(object, methods, options = {})
       define_method("auto_complete_for_#{object}_#{methods.join('_')}") do
         object_constant = object.to_s.camelize.constantize
+        conditions = methods.collect { |method| "LOWER(#{method}) LIKE :q" }.join(' OR ')
+        condition_values = { :q => '%' + params[:q].downcase + '%'}
+        
+        if params[:options]
+          extra_conditions = " AND " + params[:options].keys.collect {|k| "#{k} = :#{k}"}.join(' AND ') 
+          params[:options].each {|key,val| condition_values[key.to_sym] = val}
+        end
+        
         find_options = { 
-          :conditions => [ methods.collect { |method| "LOWER(#{method}) LIKE :q" }.join(' OR '), { :q => '%' + params[:q].downcase + '%' } ],
+          :conditions => [ "(#{conditions}) #{extra_conditions}", condition_values ],
           :order => methods.collect { |method| "#{method} ASC" }.join(', '),
           :select => (["#{object_constant.table_name}.id"] + methods.collect { |method| "#{object_constant.table_name}.#{method}" }).join(', '),
           :limit => 10 }.merge!(options)
@@ -58,8 +66,6 @@ module AutoCompleteJquery
         @items = object_constant.find(:all, find_options).collect do |record| 
                   methods.collect { |method| record.send(method) }.join(' ')
                  end
-          
-
         render :text => @items.join("\n")
       end
     end
