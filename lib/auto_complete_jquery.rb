@@ -64,7 +64,7 @@ module AutoCompleteJquery
           :limit => 10 }.merge!(options)
         
         @items = object_constant.find(:all, find_options).collect do |record| 
-                  methods.collect { |method| record.send(method) }.join(' ')
+                  methods.collect { |method| record.send(method) if method != 'id' }.compact.join(' ') + '|' + record.id.to_s
                  end
         render :text => @items.join("\n")
       end
