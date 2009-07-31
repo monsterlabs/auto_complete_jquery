@@ -52,19 +52,28 @@ module AutoCompleteJquery
         conditions = methods.collect { |method| "LOWER(#{method}) LIKE :q" }.join(' OR ')
         condition_values = { :q => '%' + params[:q].downcase + '%'}
         
+        # Filtering options (conditions)
         if params[:options]
           extra_conditions = " AND " + params[:options].keys.collect {|k| "#{k} = :#{k}"}.join(' AND ') 
           params[:options].each {|key,val| condition_values[key.to_sym] = val}
         end
         
+        # Select options (display values)
+        select = methods.collect { |method| "#{object_constant.table_name}.#{method}" };
+        extra_select = params[:select].split.collect { |attribute| attribute = attribute.split('.')[0] ; "#{object_constant.table_name}.#{attribute.foreign_key}"}
+        
         find_options = { 
           :conditions => [ "(#{conditions}) #{extra_conditions}", condition_values ],
           :order => methods.collect { |method| "#{method} ASC" }.join(', '),
-          :select => (["#{object_constant.table_name}.id"] + methods.collect { |method| "#{object_constant.table_name}.#{method}" }).join(', '),
+          :select => (["#{object_constant.table_name}.id"] + select + extra_select).join(', '),
           :limit => 10 }.merge!(options)
         
-        @items = object_constant.find(:all, find_options).collect do |record| 
-                  methods.collect { |method| record.send(method) }.join(' ')
+        @items = object_constant.find(:all, find_options).collect do |record|
+                  # We get the methods string appended
+                  row = methods.collect { |method| record.send(method) if method != 'id' }.compact.join(' ') + '|' + record.id.to_s
+                  # Now we get the extra select options for extra display values
+                  row += '|' + params[:select].split.collect { |method| method.split('.').inject(record) { |obj, method| obj.nil? ? next : obj.send(method)} }.join('|')
+                  row
                  end
         render :text => @items.join("\n")
       end
