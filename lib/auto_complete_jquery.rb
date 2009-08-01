@@ -60,7 +60,11 @@ module AutoCompleteJquery
         
         # Select options (display values)
         select = methods.collect { |method| "#{object_constant.table_name}.#{method}" };
-        extra_select = params[:select].split.collect { |attribute| attribute = attribute.split('.')[0] ; "#{object_constant.table_name}.#{attribute.foreign_key}"}
+        extra_select = if params[:select]
+                          params[:select].split.collect { |attribute| attribute = attribute.split('.')[0] ; "#{object_constant.table_name}.#{attribute.foreign_key}"}
+                       else
+                          []
+                       end
         
         find_options = { 
           :conditions => [ "(#{conditions}) #{extra_conditions}", condition_values ],
@@ -72,7 +76,9 @@ module AutoCompleteJquery
                   # We get the methods string appended
                   row = methods.collect { |method| record.send(method) if method != 'id' }.compact.join(' ') + '|' + record.id.to_s
                   # Now we get the extra select options for extra display values
-                  row += '|' + params[:select].split.collect { |method| method.split('.').inject(record) { |obj, method| obj.nil? ? next : obj.send(method)} }.join('|')
+                  if params[:select]
+                    row += '|' + params[:select].split.collect { |method| method.split('.').inject(record) { |obj, method| obj.nil? ? next : obj.send(method)} }.join('|')
+                  end
                   row
                  end
         render :text => @items.join("\n")
