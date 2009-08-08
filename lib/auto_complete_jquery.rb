@@ -1,5 +1,5 @@
 module AutoCompleteJquery      
-  
+  unloadable  
   def self.included(base)
     base.extend(ClassMethods)
   end
