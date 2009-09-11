@@ -49,7 +49,7 @@ module AutoCompleteJquery
     def multiple_auto_complete_for(object, methods, options = {})
       define_method("auto_complete_for_#{object}_#{methods.join('_')}") do
         object_constant = object.to_s.camelize.constantize
-        conditions = methods.collect { |method| "LOWER(#{method}) LIKE :q" }.join(' OR ')
+        conditions = methods.collect { |method| "translate(LOWER(#{method}), '\303\241\303\251\303\255\303\263\303\272\303\274\303\261', 'aeiouun') LIKE :q" }.join(' OR ')
         condition_values = { :q => '%' + params[:q].downcase + '%'}
         
         # Filtering options (conditions)
